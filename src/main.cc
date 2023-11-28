@@ -8,59 +8,69 @@
 #include <unistd.h>
 #include <pthread.h>
 #include "config.h"
+#include "types.h"
 #include "utils/network_utils.h"
-#include "libs/conio_linux.h"
 
 using namespace std;
 
-//Thread pool to reduce server memory usage.
-pthread_t thread_pool[WINDOW_SIZE];
+pthread_t window_element_thread[WINDOW_SIZE];
+//Creates sliding windows threads to deal with file transfer.
+// for (uint8_t i = 0; i < WINDOW_SIZE; i++)
+// {
+//     pthread_create(&window_element_thread[i],NULL, connectionThread, NULL);
+// }
+
+void uploadFile(const char *file_name){
+    cout << "Fazendo Upload de: " << file_name << endl;
+}
+
+void downloadFile(const char *file_name){
+    cout << "Fazendo Download de: " << file_name << endl;
+}
 
 int main(int argc, char* argv[]) {
     if (argc != 3) {
         cout << "Usage: " << argv[0] << " <upload/download> <file_path>" << endl;
         return 1;
-    }
-
-    string operation = argv[1];
-    string filePath = argv[2];
-
-    cout <<"Operação: " << operation << " Arquivo: " << filePath <<endl;
-    if (operation == "upload") {
-        // uploadFile(filePath.c_str());
-    } else if (operation == "download") {
-        // downloadFile(filePath.c_str());
     } else {
-        cout << "Invalid operation. Please use 'upload' or 'download'." << endl;
-        return 1;
+        int clientSocket;
+        struct sockaddr_in serverAddr;
+        string operation = argv[1];
+        string file_path = argv[2];
+        operation_datagram_t operation_packet;
+
+        check(
+            (clientSocket = socket(AF_INET, SOCK_DGRAM, 0)),
+            "Failed to create client socket"
+        );
+
+        memset(&serverAddr, 0, sizeof(serverAddr));
+        serverAddr.sin_family = AF_INET;
+        serverAddr.sin_port = htons(SERVER_PORT);
+        check(
+            (inet_pton(AF_INET, SERVER_IP, &serverAddr.sin_addr)),
+            "Failed to set server address.\n"
+        );
+
+        strcpy(operation_packet.file_path, file_path.c_str());
+        strcpy(operation_packet.operation, operation.c_str());
+
+        check(
+            (sendto(clientSocket, &operation_packet, sizeof(operation_datagram_t), 0, (struct sockaddr*)&serverAddr, sizeof(serverAddr))),
+            "Failed to send operation datagram.\n"
+        );
+
+        if (operation == "upload") {
+            uploadFile(file_path.c_str());
+        } else if (operation == "download") {
+            downloadFile(file_path.c_str());
+        } else {
+            cout << "Invalid operation. Please use 'upload' or 'download'." << endl;
+            return 1;
+        }
+
+        close(clientSocket);
+
+        return 0;
     }
-
-    // int server_socket, client_socket;
-    // struct sockaddr_in server_addr;
-
-    //Creates sliding windows threads to deal with file transfer.
-    // for (uint8_t i = 0; i < WINDOW_SIZE; i++)
-    // {
-    //     pthread_create(&thread_pool[i],NULL, connectionThread, NULL);
-    // }
-    
-    // check((server_socket = socket(AF_INET, SOCK_STREAM, 0)), "Failed to open stream socket");
-
-    /* Adresses */
-    // bzero(&server_addr, sizeof(server_addr));
-    // server_addr.sin_family = AF_INET;
-    // server_addr.sin_addr.s_addr = INADDR_ANY;
-    // server_addr.sin_port = htons(SERVER_PORT);
-    // check((bind(server_socket, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0),"Failed to bind stream socket");
-
-    // while (1) {
-    //     check((client_socket = accept(server_socket,(struct sockaddr *)0,0)),"Accept Failed");
-    //     int *pclient = (int*)malloc(sizeof(int));
-    //     *pclient = client_socket;
-    //     pthread_mutex_lock(&queue_mutex);
-    //     enqueue(&connection_queue,pclient); //Sends connection to Queue
-    //     pthread_cond_signal(&new_connection_arrived);
-    //     pthread_mutex_unlock(&queue_mutex);
-    // }
-    // return 0;
 }
