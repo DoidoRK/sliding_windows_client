@@ -5,7 +5,7 @@ SRC_DIR = src
 OBJ_DIR = obj
 BIN_DIR = bin
 
-EXECUTABLE = wordle_client
+EXECUTABLE = sliding_windows_client
 
 SOURCES = $(wildcard $(SRC_DIR)/*.cc)
 OBJECTS = $(patsubst $(SRC_DIR)/%.cc,$(OBJ_DIR)/%.o,$(SOURCES))
