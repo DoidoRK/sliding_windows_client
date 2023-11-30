@@ -65,8 +65,8 @@ void* uploadFileThread(void* arg){
     uint16_t thread_port = *((uint16_t*)arg);
     int thread_socket;
     struct sockaddr_in server_addr;
-    socklen_t server_addr_len = sizeof(server_addr);
     data_packet_t data_packet, ack_packet;
+    socklen_t server_addr_len = sizeof(server_addr);
 
     check(
         (thread_socket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)),
@@ -75,19 +75,19 @@ void* uploadFileThread(void* arg){
 
     memset(&server_addr, 0, sizeof(server_addr));
     server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(SERVER_PORT);
+    server_addr.sin_port = htons(thread_port);
     check(
         (inet_pton(AF_INET, SERVER_IP, &server_addr.sin_addr)),
         "Failed to set server address.\n"
     );
 
-    // struct timeval timeout;
-    // timeout.tv_sec = SOCKET_TIMEOUT_IN_SECONDS;
-    // timeout.tv_usec = SOCKET_TIMEOUT_IN_MICROSSECONDS;
-    // check(
-    //     (setsockopt (thread_socket, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout))),
-    //     "Failed to set upload thread socket receive timeout"
-    // );
+    struct timeval timeout;
+    timeout.tv_sec = SOCKET_TIMEOUT_IN_SECONDS;
+    timeout.tv_usec = SOCKET_TIMEOUT_IN_MICROSSECONDS;
+    check(
+        (setsockopt (thread_socket, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout))),
+        "Failed to set upload thread socket receive timeout"
+    );
 
     // Use select to detect timeout
     fd_set readSet;
@@ -96,36 +96,40 @@ void* uploadFileThread(void* arg){
 
     while (current_chunk < number_of_chunks)
     {
-        cout << "Enviando pacote!" << endl;
-        cout << frame_list[current_chunk].data << endl;
-        cout << (frame_list[current_chunk].status? "ACKNOWLEDGED" : "NOT_ACKNOWLEDGED") << endl;
         data_packet.sequence_number = current_chunk;
-         memcpy(&(data_packet.frame), &(frame_list[current_chunk]), sizeof(frame_t));
-        cout << "Carregou o pacote!" << endl;
+        memcpy(&(data_packet.frame), &(frame_list[current_chunk]), sizeof(frame_t));
+
+        cout << "Frame number: " << current_chunk << " readed from frame list!" << endl;
+        cout << "Thread Port: " << thread_port << " sending data packet!" << endl;
+        cout << "Packet info: " << endl;
+        cout << "Status: " <<(data_packet.frame.status? "ACKNOWLEDGED" : "NOT_ACKNOWLEDGED") << endl;
+        cout << "Sequence Number: " << data_packet.sequence_number << endl;
+        cout << "Packet contents: " << data_packet.frame.data << endl << endl;
         check(
             (sendto(thread_socket, &data_packet, sizeof(data_packet_t), 0, (struct sockaddr*)&server_addr, sizeof(server_addr))),
             "Upload thread failed to send data packet.\n"
         );
-        // int ready = select(thread_socket + 1, &readSet, NULL, NULL, &timeout);
-        // if (ready == -1) {
-        //     perror("Error in upload select");
-        // } else if (ready == 0) {
-        //     cout << "recvfrom timeout reached" << endl;
-        // } else {
+        int ready = select(thread_socket + 1, &readSet, NULL, NULL, &timeout);
+        if (ready == -1) {
+            perror("Error in upload select");
+        } else if (ready == 0) {
+            cout << "recvfrom timeout reached" << endl;
+        } else {
             // Data is ready to be received
             int bytesRead = recvfrom(thread_socket, &ack_packet, sizeof(data_packet_t), 0, (struct sockaddr*)&server_addr, &server_addr_len);
             if (bytesRead < 0) {
                 perror("recvfrom error");
             } else {
-                cout << "thread port: " << thread_port << " received data packet!" << endl;
-                cout << "Packet contents:" << thread_port << endl;
-                cout << (ack_packet.frame.status? "ACKNOWLEDGED" : "NOT_ACKNOWLEDGED") << endl;
-                cout << ack_packet.sequence_number << endl;
+                cout << "Thread Port: " << thread_port << " received ack packet!" << endl;
+                cout << "Packet info: " << endl;
+                cout << "Status: " <<(ack_packet.frame.status? "ACKNOWLEDGED" : "NOT_ACKNOWLEDGED") << endl;
+                cout << "Sequence Number: " << ack_packet.sequence_number << endl << endl;
                 if(ACKNOWLEDGED == ack_packet.frame.status){
+                    frame_list[current_chunk].status = ACKNOWLEDGED;
                     current_chunk++;
                 }
             }
-        // }
+        }
 
         // pthread_mutex_lock(&current_chunk_mutex);
         // pthread_mutex_unlock(&current_chunk_mutex);
@@ -155,7 +159,7 @@ void uploadFile(string file_name){
     operation_packet.number_of_chunks = number_of_chunks;
 
     check(
-        (client_socket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)),
+        (client_socket = socket(AF_INET, SOCK_DGRAM, 0)),
         "Failed to create client socket"
     );
 
@@ -201,7 +205,7 @@ void uploadFile(string file_name){
             return;
         }
     }
-    while (is_running)    
+    while (is_running); 
     close(client_socket);
 }
 
