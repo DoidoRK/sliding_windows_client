@@ -48,12 +48,12 @@ void loadFramesFromFile(const char file_path[FILE_NAME_SIZE], size_t number_of_c
         frame_list[i].status = NOT_ACKNOWLEDGED; // Start frames as not acknowledged
 
         // Read data from the file into the data property
-        size_t bytesRead = fread(frame_list[i].data, sizeof(char), CHUNK_SIZE, file);
+        size_t bytes_read = fread(frame_list[i].data, sizeof(char), CHUNK_SIZE, file);
 
-        if (bytesRead < CHUNK_SIZE) {
-            // Fill the remaining bytes with zeros:
-            for (size_t j = bytesRead; j < CHUNK_SIZE; ++j) {
-                frame_list[i].data[j] = 0;
+        if (bytes_read < CHUNK_SIZE) {
+            // Fill the remaining bytes with empty spaces:
+            for (size_t j = bytes_read; j < CHUNK_SIZE; ++j) {
+                frame_list[i].data[j] = 32;
             }
         }
     }
