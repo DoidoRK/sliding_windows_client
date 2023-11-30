@@ -101,36 +101,32 @@ void* uploadFileThread(void* arg){
 
         cout << "Frame number: " << current_chunk << " readed from frame list!" << endl;
         cout << "Thread Port: " << thread_port << " sending data packet!" << endl;
-        cout << "Packet info: " << endl;
-        cout << "Status: " <<(data_packet.frame.status? "ACKNOWLEDGED" : "NOT_ACKNOWLEDGED") << endl;
-        cout << "Sequence Number: " << data_packet.sequence_number << endl;
-        cout << "Packet contents: " << data_packet.frame.data << endl << endl;
+        cout << "Packet info: ";
+        cout << "Status: " << (data_packet.frame.status? "ACKNOWLEDGED" : "NOT_ACKNOWLEDGED");
+        cout << " Sequence Number: " << data_packet.sequence_number << endl << endl;
         check(
             (sendto(thread_socket, &data_packet, sizeof(data_packet_t), 0, (struct sockaddr*)&server_addr, sizeof(server_addr))),
             "Upload thread failed to send data packet.\n"
         );
-        int ready = select(thread_socket + 1, &readSet, NULL, NULL, &timeout);
-        if (ready == -1) {
-            perror("Error in upload select");
-        } else if (ready == 0) {
-            cout << "recvfrom timeout reached" << endl;
-        } else {
-            // Data is ready to be received
-            int bytesRead = recvfrom(thread_socket, &ack_packet, sizeof(data_packet_t), 0, (struct sockaddr*)&server_addr, &server_addr_len);
-            if (bytesRead < 0) {
-                perror("recvfrom error");
+        // Data is ready to be received
+        int recv_result = recvfrom(thread_socket, &ack_packet, sizeof(data_packet_t), 0, (struct sockaddr*)&server_addr, &server_addr_len);
+        if (recv_result < 0) {
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                // Timeout occurred
+                cout << "Ack packet for sequence number: "<< current_chunk << " Timeout occurred!" << endl;
             } else {
-                cout << "Thread Port: " << thread_port << " received ack packet!" << endl;
-                cout << "Packet info: " << endl;
-                cout << "Status: " <<(ack_packet.frame.status? "ACKNOWLEDGED" : "NOT_ACKNOWLEDGED") << endl;
-                cout << "Sequence Number: " << ack_packet.sequence_number << endl << endl;
-                if(ACKNOWLEDGED == ack_packet.frame.status){
-                    frame_list[current_chunk].status = ACKNOWLEDGED;
-                    current_chunk++;
-                }
+                perror("Error receiving data");
+            }
+        } else {
+            cout << "Thread Port: " << thread_port << " received ack packet!" << endl;
+            cout << "Packet info: ";
+            cout << "Status: " << (ack_packet.frame.status? "ACKNOWLEDGED" : "NOT_ACKNOWLEDGED");
+            cout << " Sequence Number: " << ack_packet.sequence_number << endl << endl;
+            if(ACKNOWLEDGED == ack_packet.frame.status){
+                frame_list[current_chunk].status = ACKNOWLEDGED;
+                current_chunk++;
             }
         }
-
         // pthread_mutex_lock(&current_chunk_mutex);
         // pthread_mutex_unlock(&current_chunk_mutex);
     }
