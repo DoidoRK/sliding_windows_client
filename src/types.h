@@ -16,6 +16,12 @@ enum DATA_PACKET_TYPE {
     SEND_DATA_PACKET,
 };
 
+enum THREAD_STATUS {
+    OPERATION_IN_BUFFER,
+    WAITING_FOR_DATA,
+    SENDING_DATA,
+};
+
 enum FRAME_STATUS {
     NOT_ACKNOWLEDGED,
     ACKNOWLEDGED,
@@ -28,7 +34,7 @@ typedef struct frame_struct {
 typedef struct operation_packet_struct {
     int ftp_mode;
     char file_name[FILE_NAME_SIZE];
-    size_t number_of_chunks_in_file;
+    size_t file_size_in_chunks;
 } operation_packet_t;
 
 typedef struct data_packet_struct {

@@ -14,7 +14,7 @@
 //Unexpected behaviour may appear
 
 //Error simulation settings
-#define TIMEOUT_CHANCE_PERCENT  70
+#define ERROR_IN_COMM_CHANCE_PERCENT  70
 
 //Sliding Windows settings
 #define FILE_NAME_SIZE 128

@@ -10,6 +10,8 @@ int main(int argc, char* argv[]) {
     } else {
         int operation = atoi(argv[1]);
         string file_name = argv[2];
+        // Seed the random number generator with the current time to simulate time out occurring
+        srand(static_cast<unsigned int>(time(nullptr)));
         switch (operation)
         {
             case DOWNLOAD:

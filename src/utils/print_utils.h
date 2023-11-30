@@ -6,7 +6,7 @@
 
 pthread_mutex_t print_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-void printDataPacket(size_t current_chunk, size_t total_size, uint16_t thread_port, data_packet_t data_packet, int data_packet_type){
+void printDataPacket(size_t total_size, uint16_t thread_port, data_packet_t data_packet, int data_packet_type){
     pthread_mutex_lock(&print_mutex);
     if(data_packet_type == RECV_DATA_PACKET){
         //Is a received packet
@@ -25,12 +25,12 @@ void printDataPacket(size_t current_chunk, size_t total_size, uint16_t thread_po
     pthread_mutex_unlock(&print_mutex);
 }
 
-void printOperationPacket(size_t current_chunk, uint16_t thread_port, operation_packet_t operation_packet){
+void printOperationPacket(uint16_t thread_port, operation_packet_t operation_packet){
     pthread_mutex_lock(&print_mutex);
     cout << "Operation Packet:" << endl;
     cout << "FTP Mode: " << ((operation_packet.ftp_mode == 0) ? "Upload" : "Download");
     cout << " File: " << operation_packet.file_name;
-    cout << " Number of chunks: " << operation_packet.number_of_chunks_in_file << endl;
+    cout << " Number of chunks: " << operation_packet.file_size_in_chunks << endl;
     pthread_mutex_unlock(&print_mutex);
 }
 
