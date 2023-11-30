@@ -12,8 +12,8 @@ enum FTP_MODES {
 };
 
 enum FRAME_STATUS {
-    ACKNOWLEDGED,
     NOT_ACKNOWLEDGED,
+    ACKNOWLEDGED,
 };
 typedef struct frame_struct {
     int status;
@@ -22,7 +22,7 @@ typedef struct frame_struct {
 
 typedef struct operation_packet_struct {
     int ftp_mode;
-    char file_path[FILE_PATH_SIZE];
+    char file_name[FILE_NAME_SIZE];
     size_t number_of_chunks;
 } operation_packet_t;
 

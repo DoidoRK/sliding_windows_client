@@ -2,7 +2,7 @@
 #define _CONFIG_H_
 
 //Connection settings
-#define SERVER_PORT 8080
+#define SERVER_PORT 4000
 #define SERVER_IP "192.168.171.67"  // Server's IP Address
 
 //Socket timeout settings
@@ -11,9 +11,11 @@
 
 
 //Sliding Windows settings
-#define FILE_PATH_SIZE 128
+#define FILE_NAME_SIZE 128
 #define OPERATION_BUFFER_SIZE 9
-#define WINDOW_SIZE 5
+#define WINDOW_SIZE 1
 #define CHUNK_SIZE 512 //In Bytes
+
+#define FILE_PATH "/home/doidobr/Projetos/Redes/sliding_windows_client/src/files/"
 
 #endif /* _CONFIG_H_ */

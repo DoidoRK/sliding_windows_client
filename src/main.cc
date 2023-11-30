@@ -9,15 +9,15 @@ int main(int argc, char* argv[]) {
         return 1;
     } else {
         int operation = atoi(argv[1]);
-        string file_path = argv[2];
+        string file_name = argv[2];
         switch (operation)
         {
             case DOWNLOAD:
-                downloadFile(file_path.c_str());
+                downloadFile(file_name.c_str());
                 break;
 
             case UPLOAD:
-                uploadFile(file_path.c_str());
+                uploadFile(file_name.c_str());
                 break;
                 
             default:
