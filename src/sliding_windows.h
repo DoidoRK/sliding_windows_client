@@ -92,10 +92,6 @@ void* uploadFileThread(void* arg){
         "Failed to set upload thread socket receive timeout"
     );
 
-    // // Use select to detect timeout
-    // fd_set readSet;
-    // FD_ZERO(&readSet);
-    // FD_SET(thread_socket, &readSet);
     int recv_result, send_success_chance;
     while (current_frame_index < frame_list_last_index)
     {
@@ -123,11 +119,14 @@ void* uploadFileThread(void* arg){
                             (sendto(thread_socket, &data_packet, sizeof(data_packet_t), 0, (struct sockaddr*)&server_addr, sizeof(server_addr))),
                             "Upload thread failed to send data packet.\n"
                         );
+                    } else {
+                        printSendError(thread_port, data_packet.sequence_number);
                     }
                     thread_status = WAITING_FOR_DATA;
                     break;
-                
-                default:    //In Upload threads, default state is waiting for data
+
+
+                case WAITING_FOR_DATA:
                     recv_result = recvfrom(thread_socket, &ack_packet, sizeof(data_packet_t), 0, (struct sockaddr*)&server_addr, &server_addr_len);
                     if (recv_result > 0) {
                         printDataPacket(frame_list_last_index, thread_port, ack_packet, RECV_DATA_PACKET);
@@ -143,7 +142,7 @@ void* uploadFileThread(void* arg){
                     } else {
                         if (errno == EAGAIN || errno == EWOULDBLOCK) {
                             // Timeout occurred
-                            printTimeOutError(data_packet.sequence_number);
+                            printAckTimeOutError(thread_port, data_packet.sequence_number);
                         } else {
                             perror("Error receiving data");
                         }
@@ -155,6 +154,11 @@ void* uploadFileThread(void* arg){
                         pthread_mutex_unlock(&window_end_index_mutex);
                         thread_status = SENDING_DATA;
                     }
+                    break;
+
+                
+                default:    //In Upload threads, default state is waiting for data
+                    cout << "Thread Status desconhecido";
                     break;
             }
         }

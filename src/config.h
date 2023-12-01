@@ -14,11 +14,11 @@
 //Unexpected behaviour may appear
 
 //Error simulation settings
-#define ERROR_IN_COMM_CHANCE_PERCENT  70
+#define ERROR_IN_COMM_CHANCE_PERCENT  10
 
 //Sliding Windows settings
+#define WINDOW_SIZE 2
 #define FILE_NAME_SIZE 128
-#define WINDOW_SIZE 5
 #define CHUNK_SIZE 128 //In Bytes
 #define DELAY_BETWEEN_THREAD_CREATION 10
 

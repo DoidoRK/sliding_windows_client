@@ -11,14 +11,13 @@ void printDataPacket(size_t total_size, uint16_t thread_port, data_packet_t data
     if(data_packet_type == RECV_DATA_PACKET){
         //Is a received packet
         setfontcolor(YELLOW);
-        cout << "Receiving Data Packet" << endl;
+        cout << "Thread Port: " << thread_port << " Receiving Data Packet" << endl;
     } else {
         //Is a packet to send
         setfontcolor(GREEN);
-        cout << "Sending Data Packet" << endl;
+        cout << "Thread Port: " << thread_port << " Sending Data Packet" << endl;
     }
-    cout << "Thread Port: " << thread_port << " sending data packet!" << endl;
-    cout << "Packet info: ";
+    cout << " Packet info: ";
     cout << "Status: " << (data_packet.frame.status? "ACKNOWLEDGED" : "NOT_ACKNOWLEDGED");
     cout << " Sequence Number: " << data_packet.sequence_number << " / "  << total_size << endl << endl;
     setfontcolor(WHITE);
@@ -34,10 +33,29 @@ void printOperationPacket(uint16_t thread_port, operation_packet_t operation_pac
     pthread_mutex_unlock(&print_mutex);
 }
 
-void printTimeOutError(size_t sequence_number){
+void printTimeOutError(uint16_t thread_port, size_t sequence_number){
+    pthread_mutex_lock(&print_mutex);
+    setfontcolor(CYAN);
+    cout << "Thread in port: " << thread_port << endl;
+    cout << "Waiting packet for sequence number: "<< sequence_number << " Timeout occurred!" << endl;
+    setfontcolor(WHITE);
+    pthread_mutex_unlock(&print_mutex);
+}
+
+void printAckTimeOutError(uint16_t thread_port, size_t sequence_number){
     pthread_mutex_lock(&print_mutex);
     setfontcolor(RED);
+    cout << "Thread in port: " << thread_port << endl;
     cout << "Ack packet for sequence number: "<< sequence_number << " Timeout occurred!" << endl;
+    setfontcolor(WHITE);
+    pthread_mutex_unlock(&print_mutex);
+}
+
+void printSendError(uint16_t thread_port, size_t sequence_number){
+    pthread_mutex_lock(&print_mutex);
+    setfontcolor(MAGENTA);
+    cout << "Thread in port: " << thread_port << endl;
+    cout << "Failed to send packet for sequence number: "<< sequence_number << endl;
     setfontcolor(WHITE);
     pthread_mutex_unlock(&print_mutex);
 }
