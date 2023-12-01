@@ -95,7 +95,7 @@ void* uploadFileThread(void* arg){
     int recv_result, send_success_chance;
     while (current_frame_index < frame_list_last_index)
     {
-        cout << "Current Index: " << current_frame_index << " Window End" << window_end_index << endl;
+        cout << "Current Index: " << current_frame_index << " Window End: " << window_end_index << endl;
         switch (thread_status)
         {
             case OPERATION_IN_BUFFER:
@@ -138,14 +138,14 @@ void* uploadFileThread(void* arg){
                     printDataPacket(frame_list_last_index, thread_port, ack_packet, RECV_DATA_PACKET);
                     if (ack_packet.sequence_number == current_frame_index)
                     {
-                        pthread_mutex_lock(&frame_list_mutex);
-                        frame_list[window_end_index].status = ACKNOWLEDGED;
                         pthread_mutex_lock(&current_index_mutex);
                         current_frame_index++;
                         pthread_mutex_unlock(&current_index_mutex);
-                        pthread_mutex_unlock(&frame_list_mutex);
-                        thread_status = OPERATION_IN_BUFFER;
                     }
+                    pthread_mutex_lock(&frame_list_mutex);
+                    frame_list[ack_packet.sequence_number].status = ACKNOWLEDGED;
+                    pthread_mutex_unlock(&frame_list_mutex);
+                    thread_status = OPERATION_IN_BUFFER;
                 } else {
                     if (errno == EAGAIN || errno == EWOULDBLOCK) {
                         // Timeout occurred
@@ -159,7 +159,6 @@ void* uploadFileThread(void* arg){
                     window_end_index = current_frame_index;
                     pthread_mutex_unlock(&current_index_mutex);
                     pthread_mutex_unlock(&window_end_index_mutex);
-                    thread_status = SENDING_DATA;
                 }
                 break;
 

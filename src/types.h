@@ -38,7 +38,7 @@ typedef struct operation_packet_struct {
 } operation_packet_t;
 
 typedef struct data_packet_struct {
-    int sequence_number;
+    size_t sequence_number;
     frame_t frame;
 } data_packet_t;
 
