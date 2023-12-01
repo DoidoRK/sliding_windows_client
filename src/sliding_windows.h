@@ -95,72 +95,78 @@ void* uploadFileThread(void* arg){
     int recv_result, send_success_chance;
     while (current_frame_index < frame_list_last_index)
     {
-        if(window_end_index - current_frame_index < WINDOW_SIZE) {
-            switch (thread_status)
-            {
-                case OPERATION_IN_BUFFER:
-                    if(window_end_index < frame_list_last_index){
-                        data_packet.sequence_number = window_end_index;
-                        pthread_mutex_lock(&frame_list_mutex);
-                        memcpy(&(data_packet.frame), &(frame_list[window_end_index]), sizeof(frame_t));
-                        pthread_mutex_lock(&window_end_index_mutex);
-                        window_end_index++;
-                        pthread_mutex_unlock(&window_end_index_mutex);
-                        pthread_mutex_unlock(&frame_list_mutex);
-                        thread_status = SENDING_DATA;
-                    }
-                    break;
-
-                case SENDING_DATA:
-                    printDataPacket(frame_list_last_index, thread_port, data_packet, SEND_DATA_PACKET);
-                    send_success_chance = generateRandomNumber();
-                    if(send_success_chance > ERROR_IN_COMM_CHANCE_PERCENT){
-                        check(
-                            (sendto(thread_socket, &data_packet, sizeof(data_packet_t), 0, (struct sockaddr*)&server_addr, sizeof(server_addr))),
-                            "Upload thread failed to send data packet.\n"
-                        );
-                    } else {
-                        printSendError(thread_port, data_packet.sequence_number);
-                    }
-                    thread_status = WAITING_FOR_DATA;
-                    break;
-
-
-                case WAITING_FOR_DATA:
-                    recv_result = recvfrom(thread_socket, &ack_packet, sizeof(data_packet_t), 0, (struct sockaddr*)&server_addr, &server_addr_len);
-                    if (recv_result > 0) {
-                        printDataPacket(frame_list_last_index, thread_port, ack_packet, RECV_DATA_PACKET);
-                        if(ACKNOWLEDGED == ack_packet.frame.status){
+        cout << "Current Index: " << current_frame_index << " Window End" << window_end_index << endl;
+        switch (thread_status)
+        {
+            case OPERATION_IN_BUFFER:
+                if(window_end_index < frame_list_last_index){
+                    if(frame_list[current_frame_index].status == NOT_ACKNOWLEDGED){
+                        if(window_end_index - current_frame_index < WINDOW_SIZE) {
+                            data_packet.sequence_number = window_end_index;
                             pthread_mutex_lock(&frame_list_mutex);
-                            frame_list[window_end_index].status = ACKNOWLEDGED;
-                            pthread_mutex_lock(&current_index_mutex);
-                            current_frame_index++;
-                            pthread_mutex_unlock(&current_index_mutex);
+                            memcpy(&(data_packet.frame), &(frame_list[window_end_index]), sizeof(frame_t));
+                            pthread_mutex_lock(&window_end_index_mutex);
+                            window_end_index++;
+                            pthread_mutex_unlock(&window_end_index_mutex);
                             pthread_mutex_unlock(&frame_list_mutex);
-                            thread_status = OPERATION_IN_BUFFER;
                         }
-                    } else {
-                        if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                            // Timeout occurred
-                            printAckTimeOutError(thread_port, data_packet.sequence_number);
-                        } else {
-                            perror("Error receiving data");
-                        }
-                        pthread_mutex_lock(&window_end_index_mutex);
-                        pthread_mutex_lock(&current_index_mutex);
-                        //If there is a error receiving package ack, go back N
-                        window_end_index = current_frame_index;
-                        pthread_mutex_unlock(&current_index_mutex);
-                        pthread_mutex_unlock(&window_end_index_mutex);
                         thread_status = SENDING_DATA;
+                    } else {
+                        thread_status = WAITING_FOR_DATA;
                     }
-                    break;
+                }
+                break;
 
-                
-                default:    //In Upload threads, default state is waiting for data
-                    cout << "Thread Status desconhecido";
-                    break;
-            }
+            case SENDING_DATA:
+                printDataPacket(frame_list_last_index, thread_port, data_packet, SEND_DATA_PACKET);
+                send_success_chance = generateRandomNumber();
+                if(send_success_chance > ERROR_IN_COMM_CHANCE_PERCENT){
+                    check(
+                        (sendto(thread_socket, &data_packet, sizeof(data_packet_t), 0, (struct sockaddr*)&server_addr, sizeof(server_addr))),
+                        "Upload thread failed to send data packet.\n"
+                    );
+                } else {
+                    printSendError(thread_port, data_packet.sequence_number);
+                }
+                thread_status = WAITING_FOR_DATA;
+                break;
+
+
+            case WAITING_FOR_DATA:
+                recv_result = recvfrom(thread_socket, &ack_packet, sizeof(data_packet_t), 0, (struct sockaddr*)&server_addr, &server_addr_len);
+                if (recv_result > 0) {
+                    printDataPacket(frame_list_last_index, thread_port, ack_packet, RECV_DATA_PACKET);
+                    if (ack_packet.sequence_number == current_frame_index)
+                    {
+                        pthread_mutex_lock(&frame_list_mutex);
+                        frame_list[window_end_index].status = ACKNOWLEDGED;
+                        pthread_mutex_lock(&current_index_mutex);
+                        current_frame_index++;
+                        pthread_mutex_unlock(&current_index_mutex);
+                        pthread_mutex_unlock(&frame_list_mutex);
+                        thread_status = OPERATION_IN_BUFFER;
+                    }
+                } else {
+                    if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                        // Timeout occurred
+                        printAckTimeOutError(thread_port, data_packet.sequence_number);
+                    } else {
+                        perror("Error receiving data");
+                    }
+                    pthread_mutex_lock(&window_end_index_mutex);
+                    pthread_mutex_lock(&current_index_mutex);
+                    //If there is a error receiving package ack, go back N
+                    window_end_index = current_frame_index;
+                    pthread_mutex_unlock(&current_index_mutex);
+                    pthread_mutex_unlock(&window_end_index_mutex);
+                    thread_status = SENDING_DATA;
+                }
+                break;
+
+            
+            default:    //In Upload threads, default state is waiting for data
+                cout << "Thread Status desconhecido";
+                break;
         }
     }
     is_running = 0;
