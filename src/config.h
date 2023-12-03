@@ -14,7 +14,7 @@
 //Unexpected behaviour may appear
 
 //Error simulation settings
-#define CHANCE_FOR_ERROR_IN_SEND_PERCENT  60
+#define CHANCE_FOR_ERROR_IN_SEND_PERCENT  20
 #define CHANCE_FOR_ERROR_IN_RECV_PERCENT  20
 
 //Sliding Windows settings
