@@ -107,15 +107,11 @@ void* uploadFileThread(void* arg){
         {
         case READ_WRITE_FRAME_BUFFER:
             if(thread_data_package_index < frame_list_last_index){
-                if(frame_list[thread_data_package_index].status == NOT_ACKNOWLEDGED){
-                    data_packet.sequence_number = thread_data_package_index;
-                    pthread_mutex_lock(&frame_list_mutex);
-                    memcpy(&(data_packet.frame), &(frame_list[thread_data_package_index]), sizeof(frame_t));
-                    pthread_mutex_unlock(&frame_list_mutex);
-                    thread_status = SENDING_DATA;
-                } else {
-                    thread_status = NEXT_INDEX;
-                }
+                data_packet.sequence_number = thread_data_package_index;
+                pthread_mutex_lock(&frame_list_mutex);
+                memcpy(&(data_packet.frame), &(frame_list[thread_data_package_index]), sizeof(frame_t));
+                pthread_mutex_unlock(&frame_list_mutex);
+                thread_status = SENDING_DATA;
             }
             break;
 
