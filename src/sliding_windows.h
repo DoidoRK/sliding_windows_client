@@ -17,7 +17,7 @@
 #include "utils/file_utils.h"
 #include "utils/print_utils.h"
 
-pthread_mutex_t current_index_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t current_frame_index_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t window_end_index_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t frame_list_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -93,13 +93,16 @@ void* uploadFileThread(void* arg){
         "Failed to set upload thread socket receive timeout"
     );
 
-    int recv_result, send_success_chance, thread_data_package_index;
+    int recv_result, comm_success_chance;
+    size_t thread_data_package_index;
     while (current_frame_index < frame_list_last_index)
     {
-        cout << "Thread Status: " << thread_status << endl;
-        pthread_mutex_lock(&current_index_mutex);
+        pthread_mutex_lock(&current_frame_index_mutex);
         thread_data_package_index = current_frame_index+thread_num;
-        pthread_mutex_unlock(&current_index_mutex);
+        pthread_mutex_unlock(&current_frame_index_mutex);
+        pthread_mutex_lock(&window_end_index_mutex);
+        window_end_index = current_frame_index+WINDOW_SIZE;
+        pthread_mutex_unlock(&window_end_index_mutex);
         switch (thread_status)
         {
         case READ_WRITE_FRAME_BUFFER:
@@ -117,9 +120,9 @@ void* uploadFileThread(void* arg){
             break;
 
         case SENDING_DATA:
-            printDataPacket(current_frame_index, thread_data_package_index, frame_list_last_index, thread_port, data_packet, SEND_DATA_PACKET);
-            send_success_chance = generateRandomNumber();
-            if(send_success_chance > CHANCE_FOR_ERROR_IN_SEND_PERCENT){
+            printDataPacket(current_frame_index, window_end_index, frame_list_last_index, thread_port, data_packet, SEND_DATA_PACKET);
+            comm_success_chance = generateRandomNumber();
+            if(comm_success_chance > CHANCE_FOR_ERROR_IN_SEND_PERCENT){
                 check(
                     (sendto(thread_socket, &data_packet, sizeof(data_packet_t), 0, (struct sockaddr*)&server_addr, sizeof(server_addr))),
                     "Upload thread failed to send data packet.\n"
@@ -132,22 +135,29 @@ void* uploadFileThread(void* arg){
 
 
         case WAITING_FOR_DATA:
-            recv_result = recvfrom(thread_socket, &ack_packet, sizeof(data_packet_t), 0, (struct sockaddr*)&server_addr, &server_addr_len);
-            if (recv_result > 0) {
-                printDataPacket(current_frame_index, thread_data_package_index, frame_list_last_index, thread_port, ack_packet, RECV_DATA_PACKET);
-                if (ack_packet.sequence_number == (thread_data_package_index) && (thread_data_package_index) == current_frame_index)
-                {
-                    pthread_mutex_lock(&frame_list_mutex);
-                    frame_list[current_frame_index].status = ACKNOWLEDGED;
-                    pthread_mutex_unlock(&frame_list_mutex);
+            comm_success_chance = generateRandomNumber();
+            if(comm_success_chance > CHANCE_FOR_ERROR_IN_RECV_PERCENT){
+                recv_result = recvfrom(thread_socket, &ack_packet, sizeof(data_packet_t), 0, (struct sockaddr*)&server_addr, &server_addr_len);
+                if (recv_result > 0) {
+                    printDataPacket(current_frame_index, window_end_index, frame_list_last_index, thread_port, ack_packet, RECV_DATA_PACKET);
+                    if (ack_packet.sequence_number == (thread_data_package_index) && (thread_data_package_index) == current_frame_index)
+                    {
+                        pthread_mutex_lock(&frame_list_mutex);
+                        frame_list[current_frame_index].status = ACKNOWLEDGED;
+                        pthread_mutex_unlock(&frame_list_mutex);
+                        thread_status = NEXT_INDEX;
+                    }
+                } else {
+                    if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                        // Timeout occurred
+                        printAckTimeOutError(thread_port, data_packet.sequence_number);
+                    } else {
+                        perror("Error receiving data");
+                    }
+                    thread_status = ACK_FAILED;
                 }
             } else {
-                if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                    // Timeout occurred
-                    printAckTimeOutError(thread_port, data_packet.sequence_number);
-                } else {
-                    perror("Error receiving data");
-                }
+                printAckTimeOutError(thread_port, data_packet.sequence_number);
                 thread_status = ACK_FAILED;
             }
             break;
@@ -155,19 +165,19 @@ void* uploadFileThread(void* arg){
         case NEXT_INDEX:
             //Only the thread for the first element in the window can move the window
             if(thread_num == 0){
-                pthread_mutex_lock(&current_index_mutex);
+                pthread_mutex_lock(&current_frame_index_mutex);
                 current_frame_index++;
-                pthread_mutex_unlock(&current_index_mutex);
+                pthread_mutex_unlock(&current_frame_index_mutex);
             }
             thread_status = READ_WRITE_FRAME_BUFFER;
             break;
 
         case ACK_FAILED:
             if(data_packet.sequence_number < current_frame_index){
-                pthread_mutex_lock(&current_index_mutex);
+                pthread_mutex_lock(&current_frame_index_mutex);
                 //If there is a error receiving package ack, go back N
                 current_frame_index = data_packet.sequence_number;
-                pthread_mutex_unlock(&current_index_mutex);
+                pthread_mutex_unlock(&current_frame_index_mutex);
                 //And reset every frame from there to NOT_ACKNOWLEDGED
                 size_t i = data_packet.sequence_number;
                 while (frame_list[i].status == ACKNOWLEDGED)
@@ -183,7 +193,7 @@ void* uploadFileThread(void* arg){
             break;
         
         default:
-            cout << "Unknown Thread Status";
+            cout << "Upload Thread: " << thread_port << "Unknown Thread status" << thread_status;
             break;
         }
     }

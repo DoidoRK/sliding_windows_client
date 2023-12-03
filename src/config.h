@@ -8,17 +8,17 @@
 
 //Socket timeout settings
 #define SOCKET_TIMEOUT_IN_SECONDS 0
-#define SOCKET_TIMEOUT_IN_MICROSSECONDS 10
+#define SOCKET_TIMEOUT_IN_MICROSSECONDS 500
 //If time out time is lesser than
 // WINDOW_SIZE * DELAY_BETWEEN_THREAD_CREATION
 //Unexpected behaviour may appear
 
 //Error simulation settings
-#define CHANCE_FOR_ERROR_IN_SEND_PERCENT  50
-#define CHANCE_FOR_ERROR_IN_RECV_PERCENT  50
+#define CHANCE_FOR_ERROR_IN_SEND_PERCENT  0
+#define CHANCE_FOR_ERROR_IN_RECV_PERCENT  0
 
 //Sliding Windows settings
-#define WINDOW_SIZE 2
+#define WINDOW_SIZE 10
 #define FILE_NAME_SIZE 128
 #define CHUNK_SIZE 128 //In Bytes
 #define DELAY_BETWEEN_THREAD_CREATION 10
