@@ -6,7 +6,7 @@
 
 pthread_mutex_t print_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-void printDataPacket(size_t total_size, uint16_t thread_port, data_packet_t data_packet, int data_packet_type){
+void printDataPacket(size_t window_start, size_t window_end, size_t total_size, uint16_t thread_port, data_packet_t data_packet, int data_packet_type){
     pthread_mutex_lock(&print_mutex);
     if(data_packet_type == RECV_DATA_PACKET){
         //Is a received packet
@@ -17,6 +17,7 @@ void printDataPacket(size_t total_size, uint16_t thread_port, data_packet_t data
         setfontcolor(GREEN);
         cout << "Thread Port: " << thread_port << " Sending Data Packet" << endl;
     }
+    cout << "Current Index: " << window_start << " Window End: " << window_end << endl;
     cout << " Packet info: ";
     cout << "Status: " << (data_packet.frame.status? "ACKNOWLEDGED" : "NOT_ACKNOWLEDGED");
     cout << " Sequence Number: " << data_packet.sequence_number << " / "  << total_size << endl << endl;

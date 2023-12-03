@@ -8,13 +8,14 @@
 
 //Socket timeout settings
 #define SOCKET_TIMEOUT_IN_SECONDS 0
-#define SOCKET_TIMEOUT_IN_MICROSSECONDS 100000
+#define SOCKET_TIMEOUT_IN_MICROSSECONDS 10
 //If time out time is lesser than
 // WINDOW_SIZE * DELAY_BETWEEN_THREAD_CREATION
 //Unexpected behaviour may appear
 
 //Error simulation settings
-#define ERROR_IN_COMM_CHANCE_PERCENT  10
+#define CHANCE_FOR_ERROR_IN_SEND_PERCENT  50
+#define CHANCE_FOR_ERROR_IN_RECV_PERCENT  50
 
 //Sliding Windows settings
 #define WINDOW_SIZE 2
