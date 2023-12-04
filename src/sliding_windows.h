@@ -91,7 +91,7 @@ void* uploadFileThread(void* arg){
 
     int recv_result, comm_success_chance;
     size_t thread_data_package_index;
-    while (current_frame_index < frame_list_last_index)
+    while (window_end_index < frame_list_last_index+WINDOW_SIZE)
     {
         pthread_mutex_lock(&current_frame_index_mutex);
         thread_data_package_index = current_frame_index+thread_num;
