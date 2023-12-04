@@ -80,10 +80,6 @@ void* uploadFileThread(void* arg){
     memset(&server_addr, 0, sizeof(server_addr));
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(thread_port);
-    check(
-        (inet_pton(AF_INET, SERVER_IP, &server_addr.sin_addr)),
-        "Failed to set server address.\n"
-    );
 
     struct timeval timeout;
     timeout.tv_sec = SOCKET_TIMEOUT_IN_SECONDS;
@@ -418,7 +414,7 @@ void downloadFile(string file_name){
     window_end_index = 0;
 
 
-    //Starts upload to server
+    //Starts download from server
     int client_socket;
     struct sockaddr_in server_addr;
     socklen_t server_addr_len = sizeof(server_addr);
@@ -464,7 +460,7 @@ void downloadFile(string file_name){
     }
 
     //Gets file size.
-    size_t file_size = operation_packet.file_size_in_chunks;
+    size_t file_size = ack_operation_packet.file_size_in_chunks;
     frame_list_last_index = file_size;
 
     //Prepares file buffer to receive incoming data.
