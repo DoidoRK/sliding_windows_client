@@ -131,29 +131,23 @@ void* uploadFileThread(void* arg){
 
 
         case WAITING_FOR_DATA:
-            comm_success_chance = generateRandomNumber();
-            if(comm_success_chance > CHANCE_FOR_ERROR_IN_RECV_PERCENT){
-                recv_result = recvfrom(thread_socket, &ack_packet, sizeof(data_packet_t), 0, (struct sockaddr*)&server_addr, &server_addr_len);
-                if (recv_result > 0) {
-                    printDataPacket(current_frame_index, window_end_index, frame_list_last_index, thread_port, ack_packet, RECV_DATA_PACKET);
-                    if (ack_packet.sequence_number == (thread_data_package_index) && (thread_data_package_index) == current_frame_index)
-                    {
-                        pthread_mutex_lock(&frame_list_mutex);
-                        frame_list[current_frame_index].status = ACKNOWLEDGED;
-                        pthread_mutex_unlock(&frame_list_mutex);
-                        thread_status = NEXT_INDEX;
-                    }
-                } else {
-                    if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                        // Timeout occurred
-                        printAckTimeOutError(thread_port, data_packet.sequence_number);
-                    } else {
-                        perror("Error receiving data");
-                    }
-                    thread_status = ACK_FAILED;
+            recv_result = recvfrom(thread_socket, &ack_packet, sizeof(data_packet_t), 0, (struct sockaddr*)&server_addr, &server_addr_len);
+            if (recv_result > 0) {
+                printDataPacket(current_frame_index, window_end_index, frame_list_last_index, thread_port, ack_packet, RECV_DATA_PACKET);
+                if (ack_packet.sequence_number == (thread_data_package_index) && (thread_data_package_index) == current_frame_index)
+                {
+                    pthread_mutex_lock(&frame_list_mutex);
+                    frame_list[current_frame_index].status = ACKNOWLEDGED;
+                    pthread_mutex_unlock(&frame_list_mutex);
+                    thread_status = NEXT_INDEX;
                 }
             } else {
-                printAckTimeOutError(thread_port, data_packet.sequence_number);
+                if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                    // Timeout occurred
+                    printAckTimeOutError(thread_port, data_packet.sequence_number);
+                } else {
+                    perror("Error receiving data");
+                }
                 thread_status = ACK_FAILED;
             }
             break;
