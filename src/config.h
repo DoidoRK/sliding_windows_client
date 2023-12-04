@@ -23,6 +23,7 @@
 #define CHUNK_SIZE 128 //In Bytes
 #define DELAY_BETWEEN_THREAD_CREATION 10
 
-#define FILE_PATH "/home/doidobr/Projetos/Redes/sliding_windows_client/src/files/"
-
+#define FILE_PATH "./src/files/"
+// make run FTP_MODE=UPLOAD FILE_NAME=myfile.txt
+// make run FTP_MODE=DOWNLOAD FILE_NAME=myfile.txt
 #endif /* _CONFIG_H_ */

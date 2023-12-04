@@ -26,5 +26,6 @@ $(BIN_DIR) $(OBJ_DIR):
 clean:
 	rm -rf $(BIN_DIR) $(OBJ_DIR)
 
+# Modify the run target to accept arguments
 run: $(BIN_DIR)/$(EXECUTABLE)
-	./$(BIN_DIR)/$(EXECUTABLE)
+	./$(BIN_DIR)/$(EXECUTABLE) $(FTP_MODE) $(FILE_NAME)
